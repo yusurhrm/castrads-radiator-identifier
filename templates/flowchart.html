@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Flowchart</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #667eea;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #1a202c;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-btn.show {
+            background: #48bb78;
+            color: white;
+        }
+
+        .toggle-btn.hide {
+            background: #f56565;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .legend-shape {
+            width: 32px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .legend-shape.decision {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        .legend-shape.result {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            border-radius: 16px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            height: calc(100vh - 180px);
+            min-height: 600px;
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            background: #fafafa;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .control-btn svg {
+            width: 24px;
+            height: 24px;
+            color: #667eea;
+        }
+
+        .stats {
+            background: #f7fafc;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .chart-container {
+                height: calc(100vh - 220px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title-section">
+                <a href="/" class="back-btn" title="Back to Home">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <div>
+                    <h1>Decision Flowchart</h1>
+                    <div class="subtitle">Complete visualization of the decision tree branch structure</div>
+                </div>
+            </div>
+            <div class="right-section">
+                <div class="stats" id="stats"></div>
+                <button id="toggleBtn" class="toggle-btn hide" onclick="toggleResultNodes()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20a9.91 9.91 0 0 1-2.94-.44"/>
+                        <path d="M21 12a9 9 0 0 0-9-9 9.85 9.85 0 0 0-2.94.44"/>
+                        <path d="M1 1l22 22"/>
+                    </svg>
+                    <span id="toggleBtnText">Hide Result Nodes</span>
+                </button>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-shape decision">Decision</div>
+                        <span>Decision Node</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-shape result">Result</div>
+                        <span>Result Node</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div id="mynetwork"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="fitNetwork()" title="Fit to Screen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const nodesData = {{ nodes | tojson }};
+        const edgesData = {{ edges | tojson }};
+
+        let showResults = true;
+        let network = null;
+        let allNodes = [];
+        let allEdges = [];
+
+        // Merge identical decision nodes
+        function mergeNodes(nodesData, edgesData) {
+            const nodeMap = new Map();
+            const mergedNodes = [];
+            const mergedEdges = [];
+
+            nodesData.forEach(node => {
+                const key = node.type === 'decision' ? node.text : node.id;
+
+                if (!nodeMap.has(key)) {
+                    nodeMap.set(key, {
+                        id: node.type === 'decision' ? `merged_${node.text}` : node.id,
+                        text: node.text,
+                        type: node.type
+                    });
+                    mergedNodes.push(nodeMap.get(key));
+                }
+            });
+
+            edgesData.forEach(edge => {
+                const fromNode = nodesData.find(n => n.id === edge.from);
+                const toNode = nodesData.find(n => n.id === edge.to);
+
+                if (fromNode && toNode) {
+                    const fromKey = fromNode.type === 'decision' ? fromNode.text : fromNode.id;
+                    const toKey = toNode.type === 'decision' ? toNode.text : toNode.id;
+
+                    const fromMergedId = nodeMap.get(fromKey)?.id;
+                    const toMergedId = nodeMap.get(toKey)?.id;
+
+                    if (fromMergedId && toMergedId) {
+                        const edgeExists = mergedEdges.some(
+                            e => e.from === fromMergedId && e.to === toMergedId && e.label === edge.label
+                        );
+
+                        if (!edgeExists) {
+                            mergedEdges.push({
+                                from: fromMergedId,
+                                to: toMergedId,
+                                label: edge.label
+                            });
+                        }
+                    }
+                }
+            });
+
+            return { mergedNodes, mergedEdges };
+        }
+
+        const { mergedNodes, mergedEdges } = mergeNodes(nodesData, edgesData);
+        allNodes = mergedNodes;
+        allEdges = mergedEdges;
+
+        const nodeColorMap = {};
+        const colors = [
+            '#667eea', '#764ba2', '#48bb78', '#ed8936',
+            '#f56565', '#38b2ac', '#805ad5', '#d69e2e'
+        ];
+        let colorIndex = 0;
+
+        function createVisData(nodes, edges, showResults) {
+            const nodeColorMap = {};
+            let colorIndex = 0;
+
+            const visNodes = nodes
+                .filter(node => showResults || node.type === 'decision')
+                .map((node) => {
+                    if (node.type === 'decision') {
+                        if (!nodeColorMap[node.text]) {
+                            nodeColorMap[node.text] = colors[colorIndex % colors.length];
+                            colorIndex++;
+                        }
+                    }
+
+                    return {
+                        id: node.id,
+                        label: node.text,
+                        shape: node.type === 'decision' ? 'box' : 'ellipse',
+                        color: node.type === 'decision' ? {
+                            background: nodeColorMap[node.text] || '#667eea',
+                            border: nodeColorMap[node.text] || '#667eea',
+                            highlight: {
+                                background: nodeColorMap[node.text] || '#764ba2',
+                                border: nodeColorMap[node.text] || '#667eea'
+                            }
+                        } : {
+                            background: '#48bb78',
+                            border: '#38a169',
+                            highlight: { background: '#38a169', border: '#48bb78' }
+                        },
+                        font: {
+                            color: 'white',
+                            size: node.type === 'decision' ? 13 : 12,
+                            face: 'Segoe UI, PingFang SC, Microsoft YaHei, sans-serif',
+                            bold: true
+                        },
+                        margin: 15,
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(0,0,0,0.15)',
+                            size: 8,
+                            x: 0,
+                            y: 3
+                        },
+                        widthConstraint: { maximum: 200 },
+                        heightConstraint: { minimum: 40 }
+                    };
+                });
+
+            const visEdges = edges
+                .filter(edge => {
+                    const toNode = nodes.find(n => n.id === edge.to);
+                    return showResults || (toNode && toNode.type === 'decision');
+                })
+                .map(edge => ({
+                    from: edge.from,
+                    to: edge.to,
+                    label: edge.label,
+                    font: {
+                        size: 11,
+                        color: '#4a5568',
+                        background: 'white',
+                        strokeWidth: 4,
+                        strokeColor: 'white',
+                        face: 'Segoe UI, PingFang SC, Microsoft YaHei, sans-serif'
+                    },
+                    color: {
+                        color: '#a0aec0',
+                        highlight: '#667eea'
+                    },
+                    arrows: {
+                        to: { enabled: true, scaleFactor: 0.7 }
+                    },
+                    smooth: {
+                        type: 'cubicBezier',
+                        forceDirection: 'vertical',
+                        roundness: 0.3
+                    },
+                    width: 2
+                }));
+
+            return { visNodes, visEdges };
+        }
+
+        function initNetwork() {
+            const container = document.getElementById('mynetwork');
+            const { visNodes, visEdges } = createVisData(allNodes, allEdges, showResults);
+
+            const data = {
+                nodes: new vis.DataSet(visNodes),
+                edges: new vis.DataSet(visEdges)
+            };
+
+            const options = {
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'hubsize',
+                        levelSeparation: 150,
+                        nodeSpacing: 200,
+                        treeSpacing: 250,
+                        blockShifting: true,
+                        edgeMinimization: true,
+                        parentCentralization: true
+                    }
+                },
+                physics: {
+                    enabled: false
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    zoomView: true,
+                    dragView: true,
+                    hideEdgesOnDrag: false,
+                    hideNodesOnDrag: false
+                },
+                nodes: {
+                    borderWidth: 2,
+                    borderWidthSelected: 3
+                },
+                edges: {
+                    chosen: {
+                        edge: (values, id, selected, hovering) => {
+                            values.width = 4;
+                        }
+                    }
+                }
+            };
+
+            if (network) {
+                network.destroy();
+            }
+
+            network = new vis.Network(container, data, options);
+
+            const visibleNodes = showResults ? allNodes.length : allNodes.filter(n => n.type === 'decision').length;
+            const visibleEdges = showResults ? allEdges.length : allEdges.filter(e => {
+                const toNode = allNodes.find(n => n.id === e.to);
+                return toNode && toNode.type === 'decision';
+            }).length;
+
+            document.getElementById('stats').textContent =
+                `${visibleNodes} nodes · ${visibleEdges} edges`;
+
+            network.once('afterDrawing', function() {
+                fitNetwork();
+            });
+
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    network.focus(nodeId, {
+                        scale: 1.5,
+                        animation: {
+                            duration: 400,
+                            easingFunction: 'easeInOutQuad'
+                        }
+                    });
+                }
+            });
+
+            network.on("doubleClick", function (params) {
+                fitNetwork();
+            });
+        }
+
+        function fitNetwork() {
+            network.fit({
+                animation: {
+                    duration: 600,
+                    easingFunction: 'easeInOutQuad'
+                },
+                padding: { top: 50, right: 50, bottom: 50, left: 50 }
+            });
+        }
+
+        function toggleResultNodes() {
+            showResults = !showResults;
+
+            const toggleBtn = document.getElementById('toggleBtn');
+            const toggleBtnText = document.getElementById('toggleBtnText');
+
+            if (showResults) {
+                toggleBtn.className = 'toggle-btn hide';
+                toggleBtnText.textContent = 'Hide Result Nodes';
+                toggleBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20a9.91 9.91 0 0 1-2.94-.44"/>
+                        <path d="M21 12a9 9 0 0 0-9-9 9.85 9.85 0 0 0-2.94.44"/>
+                        <path d="M1 1l22 22"/>
+                    </svg>
+                    <span id="toggleBtnText">Hide Result Nodes</span>
+                `;
+            } else {
+                toggleBtn.className = 'toggle-btn show';
+                toggleBtnText.textContent = 'Show Result Nodes';
+                toggleBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span id="toggleBtnText">Show Result Nodes</span>
+                `;
+            }
+
+            initNetwork();
+        }
+
+        // Initialize
+        initNetwork();
+    </script>
+</body>
+</html>
