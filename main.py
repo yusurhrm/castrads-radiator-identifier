@@ -21,50 +21,78 @@ EXCLUDE_COLS = list(df.columns[:3]) + [df.columns[5]]
 FEATURES = [c for c in df.columns if c not in EXCLUDE_COLS]
 
 # ======================
-# 2. 决策树
+# 2. 手动决策树（按你的流程图）
 # ======================
-def entropy(labels):
-    total = len(labels)
-    counter = Counter(labels)
-    return -sum((c/total) * np.log2(c/total) for c in counter.values())
 
-def info_gain(df, feature, target):
-    base = entropy(df[target])
-    cond = 0
-    for v in df[feature].unique():
-        sub = df[df[feature] == v]
-        cond += len(sub)/len(df) * entropy(sub[target])
-    return base - cond
+def get_top_style(row):
+    if row["Plain"] == "1":
+        return "Plain"
+    elif row["Flat top"] == "1":
+        return "Flat top"
+    elif row["Scroll"] == "1":
+        return "Scroll"
+    elif row["Round top"] == "1":
+        return "Round top"
+    else:
+        return "MISSING"
 
+df["Top Style"] = df.apply(get_top_style, axis=1)
+
+# ---- 手动问题顺序（Q1–Q5）----
+MANUAL_ORDER = [
+    "Top Style",
+    "Section Length (mm)",
+    "Leg Section Depth (mm)",
+    "Mid Section Height (mm)",
+    "Pipe Centre Bottom To Floor (mm)"
+]
+
+
+# ---- 决策树节点 ----
 class TreeNode:
     def __init__(self, feature=None, label=None):
         self.feature = feature
         self.label = label
         self.children = {}
 
-def build_tree(df, features):
+
+# ---- 构建树（带 Q6/Q7 逻辑）----
+def build_tree_manual_order(df, features):
     labels = df[MODEL_COL]
 
-    # 终止条件
+    # ✅ 如果只剩一个模型 → 直接返回结果
     if len(set(labels)) == 1:
         return TreeNode(label=labels.iloc[0])
 
+    # ✅ 如果没有问题了 → 返回最常见模型
     if not features:
         return TreeNode(label=Counter(labels).most_common(1)[0][0])
 
-    best = max(features, key=lambda f: info_gain(df, f, MODEL_COL))
-    node = TreeNode(feature=best)
+    feature = features[0]
+    node = TreeNode(feature=feature)
 
-    for v in df[best].unique():
-        sub = df[df[best] == v]
-        remaining = [f for f in features if f != best]
-        node.children[v] = build_tree(sub, remaining)
+    for v in df[feature].unique():
+        sub = df[df[feature] == v]
+
+        # 🔥 关键：Q5 后检查是否唯一
+        if feature == "Pipe Centre Bottom To Floor (mm)":
+            if len(set(sub[MODEL_COL])) == 1:
+                node.children[v] = TreeNode(label=sub[MODEL_COL].iloc[0])
+            else:
+                # 👉 进入 Q6 & Q7
+                node.children[v] = build_tree_manual_order(
+                    sub,
+                    ["Easy Clean", "Nipple Top / Bottom"]
+                )
+        else:
+            node.children[v] = build_tree_manual_order(sub, features[1:])
 
     return node
 
-print("开始构建树...")
-tree = build_tree(df, FEATURES)
-print("树构建完成")
+
+print("开始构建手动树...")
+tree = build_tree_manual_order(df, MANUAL_ORDER)
+print("手动树构建完成")
 
 # ======================
 # 3. 状态
@@ -137,7 +165,7 @@ def next_question(request: Request):
             by=["is_missing", "is_text", "num", "val"]
         )
 
-        options = df_sort["val"].drop_duplicates().tolist()
+        options = [opt for opt in df_sort["val"].drop_duplicates().tolist() if opt != "MISSING"]
 
         return template_engine.TemplateResponse(
             request=request,
