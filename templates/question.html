@@ -250,6 +250,11 @@
                 </div>
                 <div class="question-title">Please answer the following question</div>
                 <div class="feature-name">{{ feature }}</div>
+                {% if feature == "Section Length (mm)" %}
+                <div style="text-align: center; margin-top: 20px;">
+                    <img src="/static/sectionlength.png" alt="How to measure section length" style="max-width: 60%; border-radius: 12px;">
+                </div>
+                {% endif %}
             </div>
 
             <div class="divider"></div>

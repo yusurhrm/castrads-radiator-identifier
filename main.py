@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import pandas as pd
 import numpy as np
 from collections import Counter
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ✅ 模板引擎（避免污染）
 template_engine = Jinja2Templates(directory="templates")
