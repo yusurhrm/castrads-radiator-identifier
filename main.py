@@ -40,6 +40,20 @@ def get_top_style(row):
 
 df["Top Style"] = df.apply(get_top_style, axis=1)
 
+def get_nipple_label(row):
+    try:
+        top = float(row['Nipple Size Top (")'])
+        bottom = float(row['Nipple Size Bottom (")'])
+
+        if top == bottom:
+            return "Same size"
+        else:
+            return "Different size"
+    except:
+        return "MISSING"
+
+df["Nipple Size"] = df.apply(get_nipple_label, axis=1)
+
 # ---- 手动问题顺序（Q1–Q5）----
 MANUAL_ORDER = [
     "Top Style",
@@ -84,7 +98,7 @@ def build_tree_manual_order(df, features):
                 # 👉 进入 Q6 & Q7
                 node.children[v] = build_tree_manual_order(
                     sub,
-                    ["Easy Clean", "Nipple Top / Bottom"]
+                    ["Easy Clean", "Nipple Size"]  
                 )
         else:
             node.children[v] = build_tree_manual_order(sub, features[1:])
