@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure Flow UI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            color: #182033;
+            padding: 28px;
+        }
+        .page { max-width: 1280px; margin: 0 auto; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        h1 { font-size: 28px; margin-bottom: 6px; }
+        a { color: #3658d4; text-decoration: none; font-weight: 700; }
+        .hint { color: #6b7485; font-size: 14px; }
+        .message {
+            background: #eaf7ee;
+            border: 1px solid #b8e4c6;
+            color: #23643a;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .panel {
+            background: white;
+            border: 1px solid #dce3ef;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: top;
+        }
+        th { color: #5c6678; font-size: 12px; text-transform: uppercase; }
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid #cfd8e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fbfdff;
+        }
+        textarea { min-height: 72px; resize: vertical; }
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 18px;
+            background: #3658d4;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 18px;
+        }
+        .muted { color: #7b8495; font-size: 12px; margin-top: 4px; }
+        .source { min-width: 220px; }
+        .small { width: 150px; }
+        .vision-col { min-width: 180px; }
+        .preview {
+            margin-bottom: 10px;
+        }
+        .preview img {
+            max-width: 180px;
+            max-height: 120px;
+            border-radius: 8px;
+            border: 1px solid #dce3ef;
+            object-fit: contain;
+            background: #f8fafd;
+        }
+        .image-tools {
+            display: grid;
+            gap: 8px;
+        }
+        .clear-image-btn {
+            border: 1px solid #f1c5c5;
+            background: #fff5f5;
+            color: #9b2c2c;
+            margin-top: 0;
+            padding: 9px 12px;
+            width: 100%;
+        }
+        .prompt-preview {
+            margin-bottom: 20px;
+        }
+        .prompt-preview textarea {
+            min-height: 150px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <h1>Configure Flow UI</h1>
+                <p class="hint">{{ model.name }} / {{ model.id }}</p>
+            </div>
+            <div>
+                <a href="/admin">Back to Admin</a>
+                &nbsp;&nbsp;
+                <a href="/admin/model/{{ model.id }}/flowchart">View Overview Flowchart</a>
+            </div>
+        </div>
+
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <section class="panel">
+            <form method="post" enctype="multipart/form-data">
+                <div class="prompt-preview">
+                    <h2 style="font-size: 18px; margin-bottom: 8px;">Generated Image Understanding Prompt</h2>
+                    <textarea readonly>{{ vision_prompt }}</textarea>
+                    <div class="muted">This prompt is generated from the dimensions enabled below and sent to Qwen with the user photos.</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="source">Step</th>
+                            <th>Display Name</th>
+                            <th class="small">Input</th>
+                            <th>Image</th>
+                            <th class="vision-col">Image Understanding</th>
+                            <th>Help Text</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for step in steps %}
+                        <tr class="flow-step-row">
+                            <td class="source">
+                                <strong>{{ step.feature }}</strong>
+                                <input type="hidden" name="feature" value="{{ step.feature }}">
+                                <div class="muted">
+                                    {{ step.split_type }}
+                                    {% if step.threshold %} / threshold {{ step.threshold }}{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="display_name" value="{{ step.display_name }}">
+                            </td>
+                            <td class="small">
+                                <select name="input_mode">
+                                    <option value="auto" {% if step.input_mode == "auto" %}selected{% endif %}>Auto</option>
+                                    <option value="number" {% if step.input_mode == "number" %}selected{% endif %}>Number</option>
+                                    <option value="text" {% if step.input_mode == "text" %}selected{% endif %}>Text</option>
+                                    <option value="select" {% if step.input_mode == "select" %}selected{% endif %}>Select</option>
+                                </select>
+                                <div class="muted">Numeric tree nodes still branch by threshold.</div>
+                            </td>
+                            <td>
+                                <div class="preview" {% if not step.image_url %}style="display: none;"{% endif %}>
+                                    {% if step.image_url %}
+                                    <img src="{{ step.image_url }}" alt="{{ step.display_name }}">
+                                    {% else %}
+                                    <img src="" alt="{{ step.display_name }}">
+                                    {% endif %}
+                                </div>
+                                <div class="image-tools">
+                                    <input type="hidden" name="existing_image_url" value="{{ step.image_url }}">
+                                    <select name="selected_image_url" class="image-select">
+                                        <option value="">Select uploaded image</option>
+                                        {% for image in available_images %}
+                                        <option value="{{ image }}" {% if image == step.image_url %}selected{% endif %}>{{ image.split('/')[-1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="file" class="image-upload" accept="image/*">
+                                    <button type="button" class="clear-image-btn">Clear image</button>
+                                    <div class="muted">Choose an existing image, upload a new one, or clear this step image.</div>
+                                </div>
+                            </td>
+                            <td class="vision-col">
+                                <label>
+                                    <input type="checkbox" name="vision_enabled" value="{{ step.feature }}" {% if step.vision_enabled %}checked{% endif %} style="width: auto;">
+                                    Use image understanding
+                                </label>
+                                <div class="muted">When enabled, the generated prompt uses this row's display name, input mode, help text, threshold and candidate values.</div>
+                            </td>
+                            <td>
+                                <textarea name="help_text" placeholder="Optional instruction shown to users">{{ step.help_text }}</textarea>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit">Save Flow UI</button>
+            </form>
+        </section>
+    </main>
+    <script>
+        const modelId = "{{ model.id }}";
+
+        function filenameFromUrl(url) {
+            return url.split('/').pop();
+        }
+
+        function setPreview(row, imageUrl) {
+            const preview = row.querySelector('.preview');
+            const image = preview.querySelector('img');
+            if (imageUrl) {
+                image.src = imageUrl;
+                preview.style.display = '';
+            } else {
+                image.removeAttribute('src');
+                preview.style.display = 'none';
+            }
+        }
+
+        function ensureOption(select, imageUrl) {
+            if (!imageUrl) return;
+            const exists = Array.from(select.options).some(option => option.value === imageUrl);
+            if (!exists) {
+                const option = new Option(filenameFromUrl(imageUrl), imageUrl);
+                select.add(option);
+            }
+            select.value = imageUrl;
+        }
+
+        function syncAllImageSelects(images) {
+            document.querySelectorAll('.image-select').forEach(select => {
+                const selected = select.value;
+                select.innerHTML = '';
+                select.add(new Option('Select uploaded image', ''));
+                images.forEach(imageUrl => {
+                    select.add(new Option(filenameFromUrl(imageUrl), imageUrl));
+                });
+                if (images.includes(selected)) {
+                    select.value = selected;
+                }
+            });
+        }
+
+        document.querySelectorAll('.flow-step-row').forEach(row => {
+            const select = row.querySelector('.image-select');
+            const hidden = row.querySelector('input[name="existing_image_url"]');
+            const upload = row.querySelector('.image-upload');
+            const clearButton = row.querySelector('.clear-image-btn');
+
+            select.addEventListener('change', () => {
+                if (select.value) {
+                    hidden.value = select.value;
+                    row.dataset.uploadedUrl = '';
+                    setPreview(row, select.value);
+                }
+            });
+
+            upload.addEventListener('change', async () => {
+                const file = upload.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await fetch(`/admin/model/${modelId}/asset/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!response.ok) {
+                    alert('Image upload failed.');
+                    return;
+                }
+                const data = await response.json();
+                syncAllImageSelects(data.images);
+                ensureOption(select, data.image_url);
+                hidden.value = data.image_url;
+                row.dataset.uploadedUrl = data.image_url;
+                setPreview(row, data.image_url);
+                upload.value = '';
+            });
+
+            clearButton.addEventListener('click', async () => {
+                const uploadedUrl = row.dataset.uploadedUrl;
+                if (uploadedUrl && hidden.value === uploadedUrl) {
+                    const formData = new FormData();
+                    formData.append('image_url', uploadedUrl);
+                    const response = await fetch(`/admin/model/${modelId}/asset/delete`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        syncAllImageSelects(data.images);
+                    }
+                }
+                hidden.value = '';
+                select.value = '';
+                row.dataset.uploadedUrl = '';
+                upload.value = '';
+                setPreview(row, '');
+            });
+        });
+    </script>
+</body>
+</html>

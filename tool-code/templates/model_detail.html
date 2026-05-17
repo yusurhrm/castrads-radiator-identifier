@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Details</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            color: #182033;
+            padding: 28px;
+        }
+        .page { max-width: 1280px; margin: 0 auto; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        h1 { font-size: 28px; margin-bottom: 6px; }
+        h2 { font-size: 18px; margin-bottom: 14px; }
+        a { color: #3658d4; text-decoration: none; font-weight: 700; }
+        .hint, .muted { color: #6b7485; font-size: 14px; }
+        .panel {
+            background: white;
+            border: 1px solid #dce3ef;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+        }
+        .metric {
+            background: #f8fafd;
+            border: 1px solid #e5ebf4;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .label {
+            color: #687386;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .value { font-size: 22px; font-weight: 800; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: top;
+        }
+        th { color: #5c6678; font-size: 12px; text-transform: uppercase; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .button, button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 16px;
+            background: #3658d4;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+        }
+        .secondary { background: #eef2f8; color: #243149; }
+        .danger { background: #fff5f5; color: #9b2c2c; border: 1px solid #f1c5c5; }
+        .empty {
+            padding: 18px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            color: #687386;
+            background: #fafcff;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <h1>{{ model.name }}</h1>
+                <p class="hint">{{ model.id }}{% if model.id == active_model_id %} / Active{% endif %}</p>
+            </div>
+            <div>
+                <a href="/admin">Back to Admin</a>
+            </div>
+        </div>
+
+        <section class="panel">
+            <h2>Evaluation Summary</h2>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="label">Accuracy</div>
+                    <div class="value">{{ "%.2f"|format((metrics.accuracy or 0) * 100) }}%</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Coverage</div>
+                    <div class="value">{{ "%.2f"|format((metrics.coverage or 0) * 100) }}%</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Rows</div>
+                    <div class="value">{{ metrics.rows }}</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Correct</div>
+                    <div class="value">{{ metrics.correct_rows or 0 }}</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Incorrect</div>
+                    <div class="value">{{ metrics.incorrect_rows or 0 }}</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Uncovered</div>
+                    <div class="value">{{ metrics.uncovered_rows or 0 }}</div>
+                </div>
+            </div>
+            <div class="actions">
+                <a class="button secondary" href="/admin/model/{{ model.id }}/retrain">Adjust Dimensions and Retrain</a>
+                <a class="button secondary" href="/admin/model/{{ model.id }}/flow">Configure Flow UI</a>
+                <form action="/admin/model/{{ model.id }}/delete" method="post" onsubmit="return confirm('Delete this model version?');">
+                    <button type="submit" class="danger">Delete Model</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Uncovered Rows</h2>
+            {% if metrics.uncovered %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Excel Row</th>
+                        <th>Actual</th>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Confidence at Stop</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metrics.uncovered %}
+                    <tr>
+                        <td>{{ item.row_number }}</td>
+                        <td>{{ item.actual }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.sku }}</td>
+                        <td>{{ "%.2f"|format((item.confidence or 0) * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">All rows reached a prediction.</div>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <h2>Incorrect Predictions</h2>
+            {% if metrics.incorrect %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Excel Row</th>
+                        <th>Actual</th>
+                        <th>Predicted</th>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metrics.incorrect %}
+                    <tr>
+                        <td>{{ item.row_number }}</td>
+                        <td>{{ item.actual }}</td>
+                        <td>{{ item.predicted }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.sku }}</td>
+                        <td>{{ "%.2f"|format((item.confidence or 0) * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No covered rows were predicted incorrectly.</div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

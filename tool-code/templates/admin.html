@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Model Management</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            color: #182033;
+            padding: 28px;
+        }
+        .page { max-width: 1180px; margin: 0 auto; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+        h1 { font-size: 28px; }
+        .nav a {
+            color: #3658d4;
+            text-decoration: none;
+            font-weight: 700;
+            margin-left: 18px;
+        }
+        .panel {
+            background: white;
+            border: 1px solid #dce3ef;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+        }
+        .panel h2 { font-size: 18px; margin-bottom: 14px; }
+        .hint { color: #6b7485; font-size: 14px; margin-bottom: 16px; }
+        .message {
+            background: #eaf7ee;
+            border: 1px solid #b8e4c6;
+            color: #23643a;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .upload-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        input[type="file"] {
+            border: 1px solid #cfd8e6;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8fafd;
+            min-width: 320px;
+        }
+        button, .button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 16px;
+            background: #3658d4;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+        }
+        .secondary { background: #eef2f8; color: #243149; }
+        .danger { background: #fff5f5; color: #9b2c2c; border: 1px solid #f1c5c5; }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 13px 12px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: middle;
+        }
+        th { color: #5c6678; font-size: 12px; text-transform: uppercase; }
+        .active {
+            display: inline-block;
+            background: #dbf7e5;
+            color: #197342;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .muted { color: #7b8495; }
+        .empty {
+            padding: 28px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            color: #687386;
+            background: #fafcff;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <h1>Model Management</h1>
+                <p class="hint">Upload product data, configure dimensions, train separated model versions, and choose the active user-facing model.</p>
+            </div>
+            <nav class="nav">
+                <a href="/">User App</a>
+                <a href="/flowchart">Flowchart</a>
+                <a href="/admin/dimension-defaults">Dimension Defaults</a>
+            </nav>
+        </div>
+
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <section class="panel">
+            <h2>Train New Model</h2>
+            <p class="hint">Upload an Excel file with the same style as output.xlsx. The first column is treated as the target model ID.</p>
+            <form action="/admin/upload" method="post" enctype="multipart/form-data" class="upload-row">
+                <input type="file" name="file" accept=".xlsx,.xls" required>
+                <button type="submit">Upload and Configure</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>Model Versions</h2>
+            {% if models %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Data</th>
+                        <th>Accuracy</th>
+                        <th>Coverage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for model in models %}
+                    <tr>
+                        <td>{% if model.active %}<span class="active">Active</span>{% else %}<span class="muted">Stored</span>{% endif %}</td>
+                        <td>
+                            <strong>{{ model.name }}</strong><br>
+                            <span class="muted">{{ model.id }}</span>
+                        </td>
+                        <td>{{ model.created_at }}</td>
+                        <td>{{ model.rows }} rows / {{ model.columns }} cols</td>
+                        <td>{{ "%.2f"|format((model.metrics.accuracy or 0) * 100) }}%</td>
+                        <td>{{ "%.2f"|format((model.metrics.coverage or 0) * 100) }}%</td>
+                        <td>
+                            <div class="actions">
+                            <a class="button secondary" href="/admin/model/{{ model.id }}">Details</a>
+                            <a class="button secondary" href="/admin/model/{{ model.id }}/retrain">Retrain</a>
+                            <a class="button secondary" href="/admin/model/{{ model.id }}/flow">Configure Flow</a>
+                            <a class="button secondary" href="/admin/model/{{ model.id }}/flowchart">View Flow</a>
+                            {% if not model.active %}
+                            <form action="/admin/activate" method="post">
+                                <input type="hidden" name="model_id" value="{{ model.id }}">
+                                <button type="submit">Activate</button>
+                            </form>
+                            {% endif %}
+                            <form action="/admin/model/{{ model.id }}/delete" method="post" onsubmit="return confirm('Delete this model version?');">
+                                <button type="submit" class="danger">Delete</button>
+                            </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No trained model yet. Upload a dataset to create the first version.</div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimension Defaults</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            color: #182033;
+            padding: 28px;
+        }
+        .page { max-width: 1280px; margin: 0 auto; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        h1 { font-size: 28px; margin-bottom: 6px; }
+        a { color: #3658d4; text-decoration: none; font-weight: 700; }
+        .hint { color: #6b7485; font-size: 14px; }
+        .message {
+            background: #eaf7ee;
+            border: 1px solid #b8e4c6;
+            color: #23643a;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .panel {
+            background: white;
+            border: 1px solid #dce3ef;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: top;
+        }
+        th { color: #5c6678; font-size: 12px; text-transform: uppercase; }
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid #cfd8e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fbfdff;
+        }
+        textarea { min-height: 64px; resize: vertical; }
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 18px;
+            background: #3658d4;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 18px;
+        }
+        .name-cell { min-width: 240px; }
+        .ease-cell { width: 150px; }
+        .rule {
+            margin: 14px 0 18px;
+            color: #6b7485;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <h1>Dimension Defaults</h1>
+                <p class="hint">Configure measurement difficulty, training comments and image-understanding descriptions for future uploaded training files.</p>
+            </div>
+            <a href="/admin">Back to Admin</a>
+        </div>
+
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <section class="panel">
+            <div class="rule">
+                Import rule: High defaults to selected with weight 2. Medium defaults to selected with weight 1. N/A, Low and Very Low default to unselected with weight 1.
+            </div>
+            <form method="post">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="name-cell">Characteristic</th>
+                            <th class="ease-cell">Ease of Identification</th>
+                            <th>Measurement Comments</th>
+                            <th>Image Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defaultsBody">
+                        {% for row in rows %}
+                        <tr>
+                            <td>
+                                <input type="text" name="dimension_name" value="{{ row.name }}">
+                            </td>
+                            <td>
+                                <select name="dimension_ease">
+                                    <option value="N/A" {% if row.ease == "N/A" %}selected{% endif %}>N/A</option>
+                                    <option value="Low" {% if row.ease == "Low" %}selected{% endif %}>Low</option>
+                                    <option value="Medium" {% if row.ease == "Medium" %}selected{% endif %}>Medium</option>
+                                    <option value="High" {% if row.ease == "High" %}selected{% endif %}>High</option>
+                                    <option value="Very Low" {% if row.ease == "Very Low" %}selected{% endif %}>Very Low</option>
+                                </select>
+                            </td>
+                            <td>
+                                <textarea name="dimension_measurement_comments">{{ row.measurement_comments }}</textarea>
+                            </td>
+                            <td>
+                                <textarea name="dimension_image_description">{{ row.image_description }}</textarea>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="button" onclick="addRow()">Add Dimension</button>
+                <button type="submit">Save Defaults</button>
+            </form>
+        </section>
+    </main>
+    <script>
+        function addRow() {
+            const body = document.getElementById('defaultsBody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" name="dimension_name" value=""></td>
+                <td>
+                    <select name="dimension_ease">
+                        <option value="N/A">N/A</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                        <option value="Very Low">Very Low</option>
+                    </select>
+                </td>
+                <td><textarea name="dimension_measurement_comments"></textarea></td>
+                <td><textarea name="dimension_image_description"></textarea></td>
+            `;
+            body.appendChild(tr);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure Training</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            color: #182033;
+            padding: 28px;
+        }
+        .page { max-width: 1180px; margin: 0 auto; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        h1 { font-size: 28px; margin-bottom: 6px; }
+        a { color: #3658d4; text-decoration: none; font-weight: 700; }
+        .hint { color: #6b7485; font-size: 14px; }
+        .panel {
+            background: white;
+            border: 1px solid #dce3ef;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            background: #f8fafd;
+            border: 1px solid #e5ebf4;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .label {
+            color: #687386;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .value { font-weight: 800; word-break: break-all; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 180px;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            border: 1px solid #cfd8e6;
+            border-radius: 8px;
+            padding: 11px 12px;
+            font: inherit;
+            background: #fbfdff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: middle;
+        }
+        th { color: #5c6678; font-size: 12px; text-transform: uppercase; }
+        .check-cell { width: 72px; }
+        .weight-cell { width: 150px; }
+        .type-cell { width: 170px; }
+        .number { width: 120px; }
+        .ease-cell { width: 120px; }
+        .comments-cell { max-width: 320px; }
+        select {
+            width: 100%;
+            border: 1px solid #cfd8e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fbfdff;
+        }
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 18px;
+            background: #3658d4;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 18px;
+        }
+        .muted { color: #7b8495; }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 18px 0 8px;
+        }
+        .secondary-btn {
+            background: #eef2f8;
+            color: #243149;
+            margin-top: 0;
+            padding: 9px 13px;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <h1>Configure Dimensions</h1>
+                <p class="hint">Set dimension weights before training. Higher weights make the decision tree prefer that dimension when splits are similarly useful.</p>
+            </div>
+            <a href="/admin">Back to Admin</a>
+        </div>
+
+        <section class="panel">
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="label">File</div>
+                    <div class="value">{{ filename }}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">Target Column</div>
+                    <div class="value">{{ target_column }}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">Rows</div>
+                    <div class="value">{{ rows }}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">Columns</div>
+                    <div class="value">{{ columns }}</div>
+                </div>
+            </div>
+
+            <form action="/admin/train" method="post">
+                <input type="hidden" name="upload_path" value="{{ upload_path }}">
+                <div class="form-grid">
+                    <div>
+                        <div class="label">Model Name</div>
+                        <input type="text" name="model_name" value="{{ default_model_name or filename ~ ' model' }}">
+                    </div>
+                    <div>
+                        <div class="label">Confidence Threshold</div>
+                        <input type="number" name="confidence_threshold" value="{{ default_threshold }}" min="0" max="1" step="0.01">
+                    </div>
+                </div>
+
+                <div class="toolbar">
+                    <button type="button" class="secondary-btn" onclick="setAllDimensions(true)">Select All</button>
+                    <button type="button" class="secondary-btn" onclick="setAllDimensions(false)">Deselect All</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="check-cell">Use</th>
+                            <th>Source Name</th>
+                            <th>Display Name</th>
+                            <th class="type-cell">Type</th>
+                            <th class="weight-cell">Weight</th>
+                            <th class="ease-cell">Ease</th>
+                            <th class="comments-cell">Measurement Comments</th>
+                            <th class="number">Values</th>
+                            <th class="number">Filled</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dimension in dimensions %}
+                        <tr>
+                            <td class="check-cell">
+                                <input type="checkbox" class="dimension-enabled" name="enabled_dimension" value="{{ dimension.name }}" {% if dimension.enabled %}checked{% endif %}>
+                            </td>
+                            <td>
+                                <strong>{{ dimension.name }}</strong>
+                                <input type="hidden" name="dimension_name" value="{{ dimension.name }}">
+                                <input type="hidden" name="dimension_ease" value="{{ dimension.ease or 'Medium' }}">
+                                <input type="hidden" name="dimension_ease_comments" value="{{ dimension.ease_comments or '' }}">
+                                <input type="hidden" name="dimension_image_description" value="{{ dimension.image_description or '' }}">
+                            </td>
+                            <td>
+                                <input type="text" name="dimension_display_name" value="{{ dimension.display_name or dimension.name }}">
+                            </td>
+                            <td class="type-cell">
+                                <select name="dimension_type">
+                                    <option value="numeric" {% if dimension.type == "numeric" %}selected{% endif %}>Numeric</option>
+                                    <option value="categorical" {% if dimension.type == "categorical" %}selected{% endif %}>Categorical</option>
+                                </select>
+                            </td>
+                            <td class="weight-cell">
+                                <input type="number" name="dimension_weight" value="{{ dimension.weight }}" min="0" step="0.1">
+                            </td>
+                            <td class="muted">{{ dimension.ease or "Medium" }}</td>
+                            <td class="muted comments-cell">{{ dimension.ease_comments }}</td>
+                            <td class="muted">{{ dimension.unique_count }}</td>
+                            <td class="muted">{{ dimension.valid_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <button type="submit">Train Model</button>
+            </form>
+        </section>
+    </main>
+    <script>
+        function setAllDimensions(checked) {
+            document.querySelectorAll('.dimension-enabled').forEach(input => {
+                input.checked = checked;
+            });
+        }
+    </script>
+</body>
+</html>
