@@ -3,9 +3,7 @@ import requests
 import pandas as pd
 
 
-# =========================================================
 # CONFIG
-# =========================================================
 
 EXCEL_FILE = "uploads/updated_output.xlsx" 
 OUTPUT_FOLDER = "static/radiator_images"
@@ -19,16 +17,12 @@ SKU_COLUMN = "Castrads SKU"
 DRIVE_LINK_COLUMN = "Link to google drive image"
 
 
-# =========================================================
 # CREATE IMAGE FOLDER
-# =========================================================
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 
-# =========================================================
 # GOOGLE DRIVE LINK CONVERTER
-# =========================================================
 
 def convert_drive_link(url):
 
@@ -66,9 +60,7 @@ def convert_drive_link(url):
     return None
 
 
-# =========================================================
 # DOWNLOAD IMAGE
-# =========================================================
 
 def download_image(url, save_path):
 
@@ -92,9 +84,7 @@ def download_image(url, save_path):
         return False
 
 
-# =========================================================
 # LOAD EXCEL
-# =========================================================
 
 print("Loading Excel file...")
 
@@ -103,9 +93,7 @@ df = pd.read_excel(EXCEL_FILE)
 print(f"Rows found: {len(df)}")
 
 
-# =========================================================
 # CREATE IMAGE COLUMN
-# =========================================================
 
 image_filenames = []
 
@@ -113,9 +101,7 @@ success_count = 0
 failed_count = 0
 
 
-# =========================================================
 # PROCESS EACH ROW
-# =========================================================
 
 for index, row in df.iterrows():
 
@@ -172,23 +158,17 @@ for index, row in df.iterrows():
         failed_count += 1
 
 
-# =========================================================
 # ADD IMAGE COLUMN
-# =========================================================
 
 df[IMAGE_COLUMN_NAME] = image_filenames
 
 
-# =========================================================
 # SAVE UPDATED EXCEL
-# =========================================================
 
 df.to_excel(UPDATED_EXCEL_FILE, index=False)
 
 
-# =========================================================
 # SUMMARY
-# =========================================================
 
 print("\n======================================")
 print("PROCESS COMPLETE")
@@ -202,4 +182,4 @@ print(OUTPUT_FOLDER)
 
 print(f"\nUpdated Excel saved")
 
-print("\nDONE ✅")
+print("\nDONE ")
